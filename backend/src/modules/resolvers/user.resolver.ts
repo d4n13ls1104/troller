@@ -21,6 +21,7 @@ import {
   RegisterInput,
   registerValidationSchema,
 } from "types/user/register/RegisterInput.type";
+import { Profile } from "../../entity/profile.entity";
 
 @Resolver()
 export class UserResolver {
@@ -61,11 +62,19 @@ export class UserResolver {
 
     const hashedPassword = await hash(data.password);
 
-    const user = await User.create({
+    const user = User.create({
       email: data.email,
       username: data.username,
       password: hashedPassword,
-    }).save();
+    });
+
+    const profile = Profile.create({
+      name: user.username,
+    });
+
+    user.profile = profile;
+
+    await user.save();
 
     if (!user) {
       return {
