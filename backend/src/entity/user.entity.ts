@@ -33,7 +33,9 @@ export class User extends BaseEntity {
   @Column("boolean", { default: false })
   confirmedEmail: boolean;
 
-  @OneToOne(() => Profile, (profile) => profile.user, { cascade: true })
+  @OneToOne(() => Profile, (profile) => profile.user, {
+    cascade: ["insert", "update"],
+  })
   @JoinColumn()
   profile: Profile;
 }
