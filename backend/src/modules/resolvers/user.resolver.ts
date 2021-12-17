@@ -1,19 +1,26 @@
 import * as FieldErrors from "constants/FieldErrors";
-import { Resolver, Mutation, Arg, Query, Ctx } from "type-graphql";
 import { RequestContext } from "types/RequestContext";
 import { UserResponse } from "types/user/UserResponse.type";
 import { hash, verify } from "argon2";
+import { UserSession } from "types/user/UserSession.type";
+import { isAuth } from "../middleware/isAuth.middleware";
 import { User } from "entity/user.entity";
 import {
-  RegisterInput,
-  registerValidationSchema,
-} from "types/user/register/RegisterInput.type";
-
+  Resolver,
+  Mutation,
+  Arg,
+  Query,
+  Ctx,
+  UseMiddleware,
+} from "type-graphql";
 import {
   LoginInput,
   loginValidationSchema,
 } from "types/user/login/LoginInput.type";
-import { UserSession } from "types/user/UserSession.type";
+import {
+  RegisterInput,
+  registerValidationSchema,
+} from "types/user/register/RegisterInput.type";
 
 @Resolver()
 export class UserResolver {
@@ -110,5 +117,37 @@ export class UserResolver {
     return {
       errors: [FieldErrors.INVALID_CREDENTIALS],
     };
+  }
+
+  @UseMiddleware(isAuth)
+  @Mutation(() => Boolean)
+  async logout(@Ctx() ctx: RequestContext): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      ctx.req.session.destroy((err) => {
+        if (err) {
+          console.error(err);
+          return reject(false);
+        }
+
+        ctx.res.clearCookie("qid");
+        return resolve(true);
+      });
+    });
+  }
+
+  @UseMiddleware(isAuth)
+  @Query(() => UserResponse)
+  async me(@Ctx() ctx: RequestContext): Promise<UserResponse> {
+    const user = await User.findOne({
+      id: (ctx.req.session as UserSession).userId,
+    });
+
+    if (!user) {
+      return {
+        errors: [FieldErrors.GENERIC_FIELD_ERROR],
+      };
+    }
+
+    return { user };
   }
 }
