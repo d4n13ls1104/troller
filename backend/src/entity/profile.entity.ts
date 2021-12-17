@@ -15,7 +15,7 @@ export class Profile extends BaseEntity {
   id: string;
 
   @Field()
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
   @Field()
