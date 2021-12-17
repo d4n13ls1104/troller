@@ -76,11 +76,6 @@ export class UserResolver {
     return { user };
   }
 
-  @Query(() => String)
-  query(): String {
-    return "hi";
-  }
-
   @Mutation(() => UserResponse)
   async login(
     @Arg("data") data: LoginInput,
