@@ -15,11 +15,11 @@ export class Profile extends BaseEntity {
   id: string;
 
   @Field()
-  @Column({ nullable: true })
+  @Column()
   name: string;
 
   @Field()
-  @Column()
+  @Column({ default: "u mad bro?" })
   bio: string;
 
   @Field()
