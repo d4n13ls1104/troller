@@ -1,9 +1,9 @@
-import * as FieldErrors from "constants/FieldErrors";
+import * as FieldErrors from "constants/fieldErrors";
 import { RequestContext } from "types/RequestContext";
 import { UserResponse } from "types/user/UserResponse.type";
 import { hash, verify } from "argon2";
 import { UserSession } from "types/user/UserSession.type";
-import { isAuth } from "../middleware/isAuth.middleware";
+import { isAuth } from "modules/middleware/auth.middleware";
 import { User } from "entity/user.entity";
 import {
   Resolver,
