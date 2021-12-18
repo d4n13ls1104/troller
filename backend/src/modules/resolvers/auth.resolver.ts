@@ -1,20 +1,28 @@
 import * as FieldErrors from "modules/constants/fieldErrors";
-import { Arg, Ctx, Mutation, Resolver, UseMiddleware } from "type-graphql";
+import { Arg, Ctx, Mutation, Resolver } from "type-graphql";
+import { createForgotPasswordUrl } from "modules/utils/createForgotPasswordUrl.util";
 import { createConfirmationUrl } from "modules/utils/createConfirmationUrl.util";
 import { UserResponse } from "types/user/UserResponse.type";
-import { confirmUserPrefix } from "modules/constants/redisPrefixes";
 import { RequestContext } from "types/RequestContext";
 import { UserSession } from "types/user/UserSession.type";
 import { sendEmail } from "modules/utils/sendEmail.util";
-import { verify } from "argon2";
-import { isAuth } from "modules/middleware/auth.middleware";
+import { hash, verify } from "argon2";
 import { User } from "entity/user.entity";
 import { redis } from "redis";
+
+import {
+  confirmUserPrefix,
+  forgotPasswordPrefix,
+} from "modules/constants/redisPrefixes";
 
 import {
   LoginInput,
   loginValidationSchema,
 } from "types/user/login/LoginInput.type";
+import {
+  passwordValidationSchema,
+  ResetPasswordInput,
+} from "types/user/resetPassword/ResetPasswordInput.type";
 
 @Resolver()
 export class AuthResolver {
@@ -70,21 +78,12 @@ export class AuthResolver {
     return { user };
   }
 
-  @Mutation(() => UserResponse)
-  @UseMiddleware(isAuth)
   @Mutation(() => Boolean)
-  async logout(@Ctx() ctx: RequestContext): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      ctx.req.session.destroy((err) => {
-        if (err) {
-          console.error(err);
-          return reject(false);
-        }
+  logout(@Ctx() ctx: RequestContext) {
+    ctx.req.session.destroy(() => true); // i have to return true to escape the callback function because express-session is retarded and uses fucking callbacks instead of promises
+    ctx.res.clearCookie("qid");
 
-        ctx.res.clearCookie("qid");
-        return resolve(true);
-      });
-    });
+    return true;
   }
 
   @Mutation(() => Boolean)
@@ -95,6 +94,61 @@ export class AuthResolver {
 
     await User.update({ id: userId }, { confirmedEmail: true });
     await redis.del(confirmUserPrefix + token);
+
+    return true;
+  }
+
+  @Mutation(() => UserResponse)
+  async resetPassword(
+    @Arg("data") data: ResetPasswordInput
+  ): Promise<UserResponse> {
+    try {
+      await passwordValidationSchema.validate(data.password);
+    } catch (err) {
+      return {
+        errors: [
+          {
+            field: err.path,
+            message: err.message,
+          },
+        ],
+      };
+    }
+    const userId = await redis.get(forgotPasswordPrefix + data.token);
+
+    const user = await User.findOne({ where: { id: userId } });
+
+    if (!userId || !user) {
+      return {
+        errors: [FieldErrors.INVALID_TOKEN],
+      };
+    }
+
+    const hashedPassword = await hash(data.password);
+
+    await User.update({ id: user.id }, { password: hashedPassword });
+    await redis.del(forgotPasswordPrefix + data.token);
+
+    return { user };
+  }
+
+  @Mutation(() => Boolean)
+  async forgotPassword(@Arg("email") email: string): Promise<boolean> {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return true;
+    }
+
+    const passwordResetUrl = await createForgotPasswordUrl(user.id);
+
+    sendEmail({
+      from: "<noreply@chat.sandtee.ml>",
+      to: user.email,
+      subject: "Password reset",
+      text: "test",
+      html: `<h1>We received a request to reset your password</h1><p>If this was not you ignore this email.</p><br/><a href="${passwordResetUrl}">${passwordResetUrl}</a>`,
+    });
 
     return true;
   }
