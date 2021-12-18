@@ -1,4 +1,4 @@
-import * as FieldErrors from "constants/fieldErrors";
+import * as FieldErrors from "modules/constants/fieldErrors";
 import { RequestContext } from "types/RequestContext";
 import { UserResponse } from "types/user/UserResponse.type";
 import { hash } from "argon2";
