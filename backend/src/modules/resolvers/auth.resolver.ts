@@ -1,11 +1,15 @@
-import * as FieldErrors from "constants/fieldErrors";
+import * as FieldErrors from "modules/constants/fieldErrors";
 import { Arg, Ctx, Mutation, Resolver, UseMiddleware } from "type-graphql";
+import { createConfirmationUrl } from "modules/utils/createConfirmationUrl.util";
 import { UserResponse } from "types/user/UserResponse.type";
+import { confirmUserPrefix } from "modules/constants/redisPrefixes";
 import { RequestContext } from "types/RequestContext";
 import { UserSession } from "types/user/UserSession.type";
+import { sendEmail } from "modules/utils/sendEmail.util";
 import { verify } from "argon2";
-import { isAuth } from "../middleware/auth.middleware";
+import { isAuth } from "modules/middleware/auth.middleware";
 import { User } from "entity/user.entity";
+import { redis } from "redis";
 
 import {
   LoginInput,
@@ -42,14 +46,28 @@ export class AuthResolver {
 
     const passwordIsCorrect = await verify(user.password, data.password);
 
-    if (passwordIsCorrect) {
-      (ctx.req.session as UserSession).userId = user.id; // login user
-      return { user };
+    if (!passwordIsCorrect) {
+      return {
+        errors: [FieldErrors.INVALID_CREDENTIALS],
+      };
     }
 
-    return {
-      errors: [FieldErrors.INVALID_CREDENTIALS],
-    };
+    if (!user.confirmedEmail) {
+      const confirmationUrl = await createConfirmationUrl(user.id);
+      await sendEmail({
+        from: `<noreply@chat.sandtee.ml>`,
+        to: user.email,
+        subject: "Please confirm your email",
+        text: "Test",
+        html: `<a href="${confirmationUrl}">${confirmationUrl}</a>`,
+      });
+      return {
+        errors: [FieldErrors.UNCONFIRMED_EMAIL],
+      };
+    }
+
+    (ctx.req.session as UserSession).userId = user.id; // login user
+    return { user };
   }
 
   @Mutation(() => UserResponse)
@@ -67,5 +85,17 @@ export class AuthResolver {
         return resolve(true);
       });
     });
+  }
+
+  @Mutation(() => Boolean)
+  async confirmEmail(@Arg("token") token: string): Promise<boolean> {
+    const userId = await redis.get(confirmUserPrefix + token);
+
+    if (!userId) return false;
+
+    await User.update({ id: userId }, { confirmedEmail: true });
+    await redis.del(confirmUserPrefix + token);
+
+    return true;
   }
 }
