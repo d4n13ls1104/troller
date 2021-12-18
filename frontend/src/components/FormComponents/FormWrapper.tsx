@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { COLORS } from "util/consts";
 
 const FormWrapper = styled.div`
     display: flex;
@@ -8,12 +9,11 @@ const FormWrapper = styled.div`
     bottom: 0;
     left: 0;
     margin: auto;
-    height: 50%;
+    height: 55%;
     width: 25%;
     flex-direction:column;
-    background-color: #000;
-    border-radius: 5px;
-    box-shadow: 2px 4px 5px grey;
+    background-color: ${COLORS.FOREGROUND};
+    border-radius: 25px;
 `
 
 export default FormWrapper;
