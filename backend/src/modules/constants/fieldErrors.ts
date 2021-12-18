@@ -23,3 +23,8 @@ export const INVALID_CREDENTIALS: FieldError = {
   field: "password",
   message: "Invalid credentials.",
 };
+
+export const UNCONFIRMED_EMAIL: FieldError = {
+  field: "email",
+  message: "Please confirm your email.",
+};
