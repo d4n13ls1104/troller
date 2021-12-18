@@ -1,7 +1,7 @@
 import { FieldError } from "types/user/FieldError.type";
 
 export const GENERIC_FIELD_ERROR: FieldError = {
-  message: "Something went wrong. Please try again later",
+  message: "Something went wrong. Please try again later.",
 };
 
 export const EMAIL_ALREADY_REGISTERED: FieldError = {
@@ -27,4 +27,9 @@ export const INVALID_CREDENTIALS: FieldError = {
 export const UNCONFIRMED_EMAIL: FieldError = {
   field: "email",
   message: "Please confirm your email.",
+};
+
+export const INVALID_TOKEN: FieldError = {
+  field: "token",
+  message: "You provided an invalid token.",
 };
