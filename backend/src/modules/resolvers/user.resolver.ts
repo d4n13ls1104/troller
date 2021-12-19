@@ -18,6 +18,7 @@ import {
   RegisterInput,
   registerValidationSchema,
 } from "types/user/register/RegisterInput.type";
+import { usernameValidationSchema } from "types/user/changeUsername/usernameValidationSchema";
 
 @Resolver()
 export class UserResolver {
@@ -93,6 +94,41 @@ export class UserResolver {
         errors: [FieldErrors.GENERIC_FIELD_ERROR],
       };
     }
+
+    return { user };
+  }
+
+  @UseMiddleware(isAuth)
+  @Mutation(() => UserResponse)
+  async changeUsername(
+    @Arg("username") username: string,
+    @Ctx() ctx: RequestContext
+  ): Promise<UserResponse> {
+    try {
+      usernameValidationSchema.validate(username);
+    } catch (err) {
+      return {
+        errors: [
+          {
+            field: err.path,
+            message: err.errors[0],
+          },
+        ],
+      };
+    }
+
+    const { userId } = ctx.req.session as UserSession;
+
+    const user = await User.findOne(userId);
+
+    if (!user) {
+      return {
+        errors: [FieldErrors.GENERIC_FIELD_ERROR],
+      };
+    }
+
+    user.username = username;
+    await user.save();
 
     return { user };
   }
