@@ -59,7 +59,7 @@ const bootstrap = async () => {
 
   app.use(session(sessionOptions));
 
-  // app.use(express.static(path.join(__dirname, "/build")));
+  // app.use(express.static(path.join(__dirname, "/build/public")));
 
   // app.get("*", (_req, res) =>
   //   res.sendFile(path.join(__dirname, "/build/public/index.html"))
