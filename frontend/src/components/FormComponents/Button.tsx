@@ -1,15 +1,16 @@
 import styled from "styled-components";
 import { COLORS } from "util/consts";
 
-const Button = styled.button`
+const Button = styled.button<{ loading?: string }>`
     margin: 5%;
     height: 10%;
     width: 35%;
     border: none;
     padding: none;
-    cursor: pointer;
+    cursor: ${props => (props.loading === '1' ? 'cursor' : 'pointer')};
     border-radius: 35px;
-    background-color: ${COLORS.BUTTON};
+    box-sizing: none;
+    background-color: ${props => (props.loading === '1' ? COLORS.BUTTON_HOVER : COLORS.BUTTON)};
     color: ${COLORS.TEXT};
     transition: 500ms;
 
