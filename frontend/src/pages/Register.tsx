@@ -9,7 +9,7 @@ import FormText from "components/FormComponents/FormText";
 import FormNavWrapper from "components/FormComponents/FormWrapper";
 import Input from "components/FormComponents/Input";
 import { FieldError, useRegisterMutation } from "generated/graphql";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { RegisterType } from "types/UserEntry";
 import { API_TIMEOUT, COLORS } from "util/consts";
 import * as ERROR from "util/errors";
@@ -26,6 +26,9 @@ const Register: React.FC = () => {
     const [passwordError, setPasswordError] = useState<boolean>(false);
     const [isSubmitting, setLoading] = useState<boolean | string>(false);
     const [confirmPassword, setConfirmPassword] = useState<string>('')
+    // tf2 way of getting loading status for error
+    const submitRef = useRef(isSubmitting)
+    submitRef.current = isSubmitting;
 
     useEffect(() => {
         document.body.style.backgroundColor = COLORS.BACKGROUND;
